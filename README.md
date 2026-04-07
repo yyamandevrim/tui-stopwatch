@@ -23,6 +23,7 @@ tui-stopwatch
 - 7-segment ASCII-style time display
 - Start/pause keys: `space` and `o`
 - Split key: `p` (stores lap delta + total elapsed)
+- Export key: `e` (writes TXT, CSV, JSON files to `exports/`)
 - Reset key: `r`
 - Quit keys: `q` and `Ctrl+C`
 - Project-local config in `.stopwatchrc.json`
@@ -39,6 +40,7 @@ Build and run compiled output:
 ```bash
 npm run build
 npm start
+```
 
 Create a package tarball preview:
 
@@ -74,6 +76,7 @@ Example:
   "keys": {
     "startPause": ["space", "o"],
     "split": ["p"],
+    "export": ["e"],
     "quit": ["q", "C-c"]
   }
 }

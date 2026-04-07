@@ -18,6 +18,7 @@
   "keys": {
     "startPause": ["space", "o"],
     "split": ["p"],
+    "export": ["e"],
     "quit": ["q", "C-c"]
   }
 }

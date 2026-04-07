@@ -22,6 +22,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   keys: {
     startPause: ["space", "o"],
     split: ["p"],
+    export: ["e"],
     quit: ["q", "C-c"],
   },
 };

@@ -25,6 +25,7 @@ export interface LayoutConfig {
 export interface KeyConfig {
   startPause: string[];
   split: string[];
+  export: string[];
   quit: string[];
 }
 

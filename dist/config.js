@@ -20,6 +20,7 @@ export const DEFAULT_CONFIG = {
     keys: {
         startPause: ["space", "o"],
         split: ["p"],
+        export: ["e"],
         quit: ["q", "C-c"],
     },
 };

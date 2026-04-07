@@ -2,6 +2,7 @@ import blessed from "blessed";
 import { renderAscii7 } from "./ascii7.js";
 import { loadConfig } from "./config.js";
 import { formatClockFromNs, formatSplitFromNs } from "./formatter.js";
+import { exportSplits } from "./exporter.js";
 import { Stopwatch } from "./stopwatch.js";
 function makeClockContent(clockText, config) {
     const rows = renderAscii7(clockText, config.layout.displayStyle);
@@ -12,6 +13,7 @@ function makeClockContent(clockText, config) {
 export function run() {
     const { config, warning } = loadConfig();
     const stopwatch = new Stopwatch();
+    let statusMessage = warning ?? null;
     const screen = blessed.screen({
         smartCSR: true,
         fullUnicode: false,
@@ -73,9 +75,9 @@ export function run() {
     screen.append(displayBox);
     screen.append(splitBox);
     screen.append(helpBox);
-    if (warning) {
-        helpBox.setContent(warning);
-    }
+    const setStatusMessage = (message) => {
+        statusMessage = message;
+    };
     const render = () => {
         const clockText = formatClockFromNs(stopwatch.elapsedNs());
         displayBox.setContent(makeClockContent(clockText, config));
@@ -83,11 +85,12 @@ export function run() {
         const help = [
             "space/o:toggle",
             "p:split",
+            "e:export",
             "r:reset",
             "q:quit",
             `state:${status}`,
         ].join("  |  ");
-        helpBox.setContent(help);
+        helpBox.setContent(statusMessage ? `${help}  |  ${statusMessage}` : help);
         const splits = stopwatch.getSplits();
         const max = Math.max(1, config.layout.maxSplits);
         const visible = splits.slice(-max).reverse();
@@ -122,9 +125,27 @@ export function run() {
             screen.render();
         });
     };
+    const runExport = async () => {
+        setStatusMessage("exporting splits...");
+        render();
+        screen.render();
+        try {
+            const result = await exportSplits(stopwatch.getSplits());
+            setStatusMessage(`exported to ${result.directory}`);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            setStatusMessage(`export failed: ${message}`);
+        }
+        render();
+        screen.render();
+    };
     bind(config.keys.startPause, () => stopwatch.toggle());
     bind(config.keys.split, () => {
         stopwatch.split();
+    });
+    bind(config.keys.export, () => {
+        void runExport();
     });
     bind(["r"], () => stopwatch.reset());
     bind(config.keys.quit, handleExit);

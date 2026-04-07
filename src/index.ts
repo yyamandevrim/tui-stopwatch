@@ -2,6 +2,7 @@ import blessed from "blessed";
 import { renderAscii7 } from "./ascii7.js";
 import { loadConfig } from "./config.js";
 import { formatClockFromNs, formatSplitFromNs } from "./formatter.js";
+import { exportSplits } from "./exporter.js";
 import { Stopwatch } from "./stopwatch.js";
 import { AppConfig } from "./types.js";
 
@@ -15,6 +16,7 @@ function makeClockContent(clockText: string, config: AppConfig): string {
 export function run(): void {
   const { config, warning } = loadConfig();
   const stopwatch = new Stopwatch();
+  let statusMessage: string | null = warning ?? null;
 
   const screen = blessed.screen({
     smartCSR: true,
@@ -82,9 +84,9 @@ export function run(): void {
   screen.append(splitBox);
   screen.append(helpBox);
 
-  if (warning) {
-    helpBox.setContent(warning);
-  }
+  const setStatusMessage = (message: string | null): void => {
+    statusMessage = message;
+  };
 
   const render = (): void => {
     const clockText = formatClockFromNs(stopwatch.elapsedNs());
@@ -95,11 +97,12 @@ export function run(): void {
     const help = [
       "space/o:toggle",
       "p:split",
+      "e:export",
       "r:reset",
       "q:quit",
       `state:${status}`,
     ].join("  |  ");
-    helpBox.setContent(help);
+    helpBox.setContent(statusMessage ? `${help}  |  ${statusMessage}` : help);
 
     const splits = stopwatch.getSplits();
     const max = Math.max(1, config.layout.maxSplits);
@@ -142,9 +145,29 @@ export function run(): void {
     });
   };
 
+  const runExport = async (): Promise<void> => {
+    setStatusMessage("exporting splits...");
+    render();
+    screen.render();
+
+    try {
+      const result = await exportSplits(stopwatch.getSplits());
+      setStatusMessage(`exported to ${result.directory}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setStatusMessage(`export failed: ${message}`);
+    }
+
+    render();
+    screen.render();
+  };
+
   bind(config.keys.startPause, () => stopwatch.toggle());
   bind(config.keys.split, () => {
     stopwatch.split();
+  });
+  bind(config.keys.export, () => {
+    void runExport();
   });
   bind(["r"], () => stopwatch.reset());
   bind(config.keys.quit, handleExit);
