@@ -1,0 +1,23 @@
+{
+  "colors": {
+    "display": "green",
+    "separator": "brightBlack",
+    "accent": "cyan",
+    "splitLabel": "yellow",
+    "splitValue": "white",
+    "hint": "magenta",
+    "status": "blue"
+  },
+  "layout": {
+    "paddingX": 1,
+    "paddingY": 1,
+    "showBorder": true,
+    "maxSplits": 12,
+    "displayStyle": "block"
+  },
+  "keys": {
+    "startPause": ["space", "o"],
+    "split": ["p"],
+    "quit": ["q", "C-c"]
+  }
+}

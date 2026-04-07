@@ -1,0 +1,43 @@
+{
+  "name": "tui-stopwatch",
+  "version": "1.0.0",
+  "description": "A responsive terminal stopwatch with ASCII 7-segment display and keyboard controls.",
+  "main": "./dist/index.js",
+  "bin": {
+    "tui-stopwatch": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    ".stopwatchrc.json"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "npm run typecheck && npm run build"
+  },
+  "keywords": [
+    "stopwatch",
+    "terminal",
+    "tui",
+    "ascii",
+    "cli"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "blessed": "^0.1.81"
+  },
+  "devDependencies": {
+    "@types/blessed": "^0.1.27",
+    "@types/node": "^25.5.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  }
+}
