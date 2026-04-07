@@ -1,6 +1,6 @@
 {
   "name": "tui-stopwatch",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A responsive terminal stopwatch with ASCII 7-segment display and keyboard controls.",
   "main": "./dist/index.js",
   "bin": {
