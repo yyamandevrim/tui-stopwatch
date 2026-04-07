@@ -4,6 +4,8 @@ export interface SplitEntry {
   totalNs: bigint;
 }
 
+export type ThemeName = "classic" | "neon" | "amber" | "mono";
+
 export interface ColorConfig {
   display: string;
   separator: string;
@@ -30,6 +32,7 @@ export interface KeyConfig {
 }
 
 export interface AppConfig {
+  theme: ThemeName;
   colors: ColorConfig;
   layout: LayoutConfig;
   keys: KeyConfig;

@@ -1,6 +1,6 @@
 import blessed from "blessed";
 import { renderAscii7 } from "./ascii7.js";
-import { loadConfig } from "./config.js";
+import { AVAILABLE_THEMES, loadConfig, resolveThemeColors } from "./config.js";
 import { formatClockFromNs, formatSplitFromNs } from "./formatter.js";
 import { exportSplits } from "./exporter.js";
 import { Stopwatch } from "./stopwatch.js";
@@ -14,6 +14,9 @@ export function run() {
     const { config, warning } = loadConfig();
     const stopwatch = new Stopwatch();
     let statusMessage = warning ?? null;
+    let selectedSplitIndex = 0;
+    let currentThemeIndex = Math.max(0, AVAILABLE_THEMES.indexOf(config.theme));
+    let currentColors = config.colors;
     const screen = blessed.screen({
         smartCSR: true,
         fullUnicode: false,
@@ -32,8 +35,8 @@ export function run() {
         content: "",
         border: config.layout.showBorder ? "line" : undefined,
         style: {
-            fg: config.colors.display,
-            border: { fg: config.colors.accent },
+            fg: currentColors.display,
+            border: { fg: currentColors.accent },
         },
         padding: {
             left: config.layout.paddingX,
@@ -57,8 +60,8 @@ export function run() {
         vi: true,
         border: config.layout.showBorder ? "line" : undefined,
         style: {
-            fg: config.colors.splitValue,
-            border: { fg: config.colors.accent },
+            fg: currentColors.splitValue,
+            border: { fg: currentColors.accent },
         },
         label: " Splits ",
     });
@@ -70,13 +73,26 @@ export function run() {
         tags: true,
         parseTags: true,
         content: "",
-        style: { fg: config.colors.hint },
+        style: { fg: currentColors.hint },
     });
     screen.append(displayBox);
     screen.append(splitBox);
     screen.append(helpBox);
     const setStatusMessage = (message) => {
         statusMessage = message;
+    };
+    const applyTheme = () => {
+        displayBox.style.fg = currentColors.display;
+        displayBox.style.border = { fg: currentColors.accent };
+        splitBox.style.fg = currentColors.splitValue;
+        splitBox.style.border = { fg: currentColors.accent };
+        helpBox.style.fg = currentColors.hint;
+    };
+    const cycleTheme = () => {
+        currentThemeIndex = (currentThemeIndex + 1) % AVAILABLE_THEMES.length;
+        currentColors = resolveThemeColors(AVAILABLE_THEMES[currentThemeIndex]);
+        applyTheme();
+        setStatusMessage(`theme: ${AVAILABLE_THEMES[currentThemeIndex]}`);
     };
     const render = () => {
         const clockText = formatClockFromNs(stopwatch.elapsedNs());
@@ -86,6 +102,8 @@ export function run() {
             "space/o:toggle",
             "p:split",
             "e:export",
+            "t:theme",
+            "up/down,j/k:scroll",
             "r:reset",
             "q:quit",
             `state:${status}`,
@@ -93,15 +111,29 @@ export function run() {
         helpBox.setContent(statusMessage ? `${help}  |  ${statusMessage}` : help);
         const splits = stopwatch.getSplits();
         const max = Math.max(1, config.layout.maxSplits);
-        const visible = splits.slice(-max).reverse();
-        const lines = visible.map((s) => {
-            const label = `Lap ${String(s.index).padStart(2, "0")}`;
-            const delta = `+${formatSplitFromNs(s.deltaNs)}`;
-            const total = formatSplitFromNs(s.totalNs);
-            return `${label.padEnd(8, " ")}  delta ${delta}  total ${total}`;
-        });
-        const splitHeader = "#        DELTA        TOTAL";
-        splitBox.setContent(lines.length ? `${splitHeader}\n${lines.join("\n")}` : "No splits yet. Press p while running.");
+        if (splits.length === 0) {
+            selectedSplitIndex = 0;
+            splitBox.setContent("No splits yet. Press p while running.");
+        }
+        else {
+            selectedSplitIndex = Math.min(selectedSplitIndex, splits.length - 1);
+            const viewport = Math.min(max, splits.length);
+            const maxStart = Math.max(0, splits.length - viewport);
+            const idealStart = selectedSplitIndex - Math.floor(viewport / 2);
+            const start = Math.min(Math.max(0, idealStart), maxStart);
+            const end = start + viewport;
+            const lines = splits.slice(start, end).map((split, index) => {
+                const absoluteIndex = start + index;
+                const selected = absoluteIndex === selectedSplitIndex;
+                const label = `Lap ${String(split.index).padStart(2, "0")}`;
+                const delta = `+${formatSplitFromNs(split.deltaNs)}`;
+                const total = formatSplitFromNs(split.totalNs);
+                const line = `${label.padEnd(8, " ")}  delta ${delta}  total ${total}`;
+                return selected ? `{inverse}${line}{/inverse}` : line;
+            });
+            const header = `Splits ${selectedSplitIndex + 1}/${splits.length}`;
+            splitBox.setContent(`${header}\n#        DELTA        TOTAL\n${lines.join("\n")}`);
+        }
         if (screen.rows < 16) {
             splitBox.hide();
             displayBox.height = "100%-1";
@@ -125,6 +157,14 @@ export function run() {
             screen.render();
         });
     };
+    const moveSelection = (delta) => {
+        const splits = stopwatch.getSplits();
+        if (splits.length === 0) {
+            selectedSplitIndex = 0;
+            return;
+        }
+        selectedSplitIndex = Math.max(0, Math.min(splits.length - 1, selectedSplitIndex + delta));
+    };
     const runExport = async () => {
         setStatusMessage("exporting splits...");
         render();
@@ -143,11 +183,28 @@ export function run() {
     bind(config.keys.startPause, () => stopwatch.toggle());
     bind(config.keys.split, () => {
         stopwatch.split();
+        selectedSplitIndex = 0;
     });
     bind(config.keys.export, () => {
         void runExport();
     });
-    bind(["r"], () => stopwatch.reset());
+    bind(["t"], () => {
+        cycleTheme();
+    });
+    bind(["up", "k"], () => moveSelection(1));
+    bind(["down", "j"], () => moveSelection(-1));
+    bind(["pageup"], () => moveSelection(5));
+    bind(["pagedown"], () => moveSelection(-5));
+    bind(["home"], () => {
+        selectedSplitIndex = stopwatch.getSplits().length > 0 ? stopwatch.getSplits().length - 1 : 0;
+    });
+    bind(["end"], () => {
+        selectedSplitIndex = 0;
+    });
+    bind(["r"], () => {
+        stopwatch.reset();
+        selectedSplitIndex = 0;
+    });
     bind(config.keys.quit, handleExit);
     screen.on("resize", () => {
         render();

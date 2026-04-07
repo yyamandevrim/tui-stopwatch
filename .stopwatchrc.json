@@ -1,4 +1,5 @@
 {
+  "theme": "amber",
   "colors": {
     "display": "green",
     "separator": "brightBlack",

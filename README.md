@@ -21,9 +21,12 @@ tui-stopwatch
 
 - Responsive terminal UI (adapts to window size)
 - 7-segment ASCII-style time display
+- Theme presets: `classic`, `neon`, `amber`, `mono`
 - Start/pause keys: `space` and `o`
 - Split key: `p` (stores lap delta + total elapsed)
 - Export key: `e` (writes TXT, CSV, JSON files to `exports/`)
+- Theme toggle key: `t`
+- Split scroll keys: `up/down`, `j/k`, `home/end`, `pageup/pagedown`
 - Reset key: `r`
 - Quit keys: `q` and `Ctrl+C`
 - Project-local config in `.stopwatchrc.json`
@@ -57,6 +60,7 @@ Example:
 
 ```json
 {
+  "theme": "amber",
   "colors": {
     "display": "green",
     "separator": "brightBlack",
@@ -84,5 +88,6 @@ Example:
 
 Notes:
 - Color values are terminal color names supported by Blessed.
+- `theme` picks a preset palette; `colors` can override individual values.
 - If config is invalid, defaults are used and a warning is shown in-app.
 - `layout.displayStyle` supports `classic` and `block`.
